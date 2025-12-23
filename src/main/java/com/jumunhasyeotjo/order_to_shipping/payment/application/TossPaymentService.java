@@ -1,6 +1,7 @@
 package com.jumunhasyeotjo.order_to_shipping.payment.application;
 
 import com.jumunhasyeotjo.order_to_shipping.common.aspect.Metric;
+import com.jumunhasyeotjo.order_to_shipping.payment.infrastructure.external.toss_payment.MockTossPaymentsClient;
 import org.springframework.stereotype.Service;
 
 import com.jumunhasyeotjo.order_to_shipping.common.exception.BusinessException;
@@ -20,7 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 @RequiredArgsConstructor
 public class TossPaymentService {
 
-	private final TossPaymentsClient tossPaymentsClient;
+	private final MockTossPaymentsClient tossPaymentsClient;
 
 	@Metric(value = "PG사 결제 처리 프로세스", level = Metric.Level.DEBUG)
 	public TossPaymentResponse confirm(TossConfirmRequest tossConfirmRequest, Payment payment) {

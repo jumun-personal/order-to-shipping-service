@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import feign.Logger;
 
 @Configuration
-@EnableFeignClients(basePackages = "com.jumunhasyeotjo.order_to_shipping")
+@EnableFeignClients(basePackages = "com.jumunhasyeotjo.order_to_shipping", defaultConfiguration = AutoTracingConfig.class)
 public class OpenFeignConfig {
 	@Bean
 	Logger.Level feignLoggerLevel() {

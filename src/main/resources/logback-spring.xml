@@ -1,36 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
-
-    <springProperty name="SERVICE_NAME" source="spring.application.name" defaultValue="unknown-service"/>
-    <springProperty name="ACTIVE_PROFILE" source="spring.profiles.active" defaultValue="local"/>
-
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
-        <encoder class="net.logstash.logback.encoder.LoggingEventCompositeJsonEncoder">
-            <providers>
-                <timestamp>
-                    <timeZone>Asia/Seoul</timeZone>
-                </timestamp>
-                <pattern>
-                    <pattern>
-                        {
-                        "timestamp": "%date{ISO8601}",
-                        "level": "%level",
-                        "logger": "%logger",
-                        "thread": "%thread",
-                        "service": "${SERVICE_NAME}",
-                        "env": "${ACTIVE_PROFILE}",
-                        "traceId": "%X{traceId:-}",
-                        "spanId": "%X{spanId:-}",
-                        "message": "%message",
-                        "exception": "%exception{5}"
-                        }
-                    </pattern>
-                </pattern>
-                <arguments/>
-            </providers>
-        </encoder>
-    </appender>
-
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
     </root>

@@ -1,6 +1,6 @@
 plugins {
     id 'java'
-    id 'org.springframework.boot' version '3.5.7'
+    id 'org.springframework.boot' version '4.0.1'
     id 'io.spring.dependency-management' version '1.1.7'
     id 'jacoco'
     id 'com.google.protobuf' version '0.9.4'
@@ -8,11 +8,11 @@ plugins {
 
 group = 'com.jumunhasyeotjo'
 version = '0.0.1-SNAPSHOT'
-description = 'Demo project for Spring Boot'
+description = 'Demo project for Spring Boot 4.0'
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(17)
+        languageVersion = JavaLanguageVersion.of(25)
     }
 }
 
@@ -24,6 +24,7 @@ configurations {
 
 repositories {
     mavenCentral()
+    maven { url 'https://repo.spring.io/milestone' }  // Spring Boot 4.0 마일스톤 지원
     maven {
         name = "GitHubPackages"
         url = uri("https://maven.pkg.github.com/jumunhasyeotjo/passport")
@@ -35,60 +36,79 @@ repositories {
 }
 
 ext {
-    set('springCloudVersion', "2025.0.0")
+    set('springCloudVersion', "2025.1.0")
 }
 
 dependencies {
+    // Spring Boot Starters
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    implementation 'org.springframework.boot:spring-boot-starter-aspectj'
+
+    // Kafka
     implementation 'org.springframework.kafka:spring-kafka'
     testImplementation 'org.springframework.kafka:spring-kafka-test'
     testImplementation 'org.testcontainers:kafka'
+
+    // Redis
     implementation 'org.redisson:redisson:3.52.0'
+
+    // Lombok
     compileOnly 'org.projectlombok:lombok'
-    runtimeOnly 'org.postgresql:postgresql'
     annotationProcessor 'org.projectlombok:lombok'
+
+    // Database
+    runtimeOnly 'org.postgresql:postgresql'
+    testImplementation 'com.h2database:h2'
+
+    // Testing
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    testImplementation "org.testcontainers:junit-jupiter:1.20.1"
-    testImplementation "org.testcontainers:postgresql:1.20.1"
+    testImplementation 'org.testcontainers:junit-jupiter:1.20.1'
+    testImplementation 'org.testcontainers:postgresql:1.20.1'
 
+    // OpenAPI/Swagger
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.5'
-    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign' // Open Feign 추가
-    implementation 'io.github.openfeign:feign-jackson:13.2'
-    implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
-    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
-    testImplementation 'com.h2database:h2' // 테스트용 H2 DB 추가
 
+    // Spring Cloud (OpenFeign, LoadBalancer)
+    implementation 'org.springframework.cloud:spring-cloud-starter-openfeign'
+    implementation 'io.github.openfeign:feign-jackson:13.2'
+    implementation 'io.github.openfeign:feign-micrometer:13.2'
+    implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'
+
+    // Eureka Client
+    implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+    // Resilience4j (Circuit Breaker, Retry)
     implementation 'io.github.resilience4j:resilience4j-spring-boot3:2.2.0'
-    implementation 'io.github.resilience4j:resilience4j-retry' // resilience4j retry 의존성 추가
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
-    implementation 'org.springframework.boot:spring-boot-starter-aop'
+    implementation 'io.github.resilience4j:resilience4j-retry'
     implementation 'org.springframework.retry:spring-retry'
 
+    // Custom Library
     implementation 'com.library:passport:1.0.3'
     implementation 'com.google.protobuf:protobuf-java:3.21.12'
 
-    implementation 'org.springframework.kafka:spring-kafka'
-
-    // 모니터링 의존성 추가
-    // 1. Actuator & Prometheus (메트릭 수집)
-    implementation 'org.springframework.boot:spring-boot-starter-actuator'
+    // Monitoring & Observability
     implementation 'io.micrometer:micrometer-registry-prometheus'
+    implementation 'io.micrometer:micrometer-observation'
     implementation 'io.micrometer:micrometer-tracing'
-
-    // 2. Distributed Tracing (Tempo 연동 - OTLP)
     implementation 'io.micrometer:micrometer-tracing-bridge-otel'
     implementation 'io.opentelemetry:opentelemetry-exporter-otlp'
 
-    // 3. Loki Appender (로그 전송)
+    // Logging (Loki)
     implementation 'com.github.loki4j:loki-logback-appender:1.6.0'
-
-    // 4. json 로그 형식 파싱
     implementation 'ch.qos.logback:logback-classic'
     implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+
+    // Database Observability
+    implementation 'net.ttddyy.observation:datasource-micrometer:1.0.3'
+
+    // Hibernate Utils (JSONB 자동 변환)
+    // Spring Boot 4.0은 Hibernate 7.x를 사용
+    implementation 'io.hypersistence:hypersistence-utils-hibernate-71:3.14.1'
 }
 
 dependencyManagement {
@@ -106,7 +126,6 @@ jacoco {
     toolVersion = "0.8.12"
 }
 
-
 jacocoTestReport {
     dependsOn test
     reports {
@@ -115,7 +134,6 @@ jacocoTestReport {
 
     afterEvaluate {
         classDirectories.setFrom(
-                // 그 외의 매칭되는 클래스도 제외 대상
                 files(classDirectories.files.collect {
                     fileTree(dir: it, excludes: [
                             "**/common/**",
@@ -131,5 +149,5 @@ jacocoTestReport {
 }
 
 tasks.named('jar') {
-	enabled = false   // 일반 jar 비활성화
+    enabled = false
 }

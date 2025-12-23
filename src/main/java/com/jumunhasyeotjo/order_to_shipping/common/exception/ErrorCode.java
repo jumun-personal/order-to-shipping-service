@@ -30,6 +30,7 @@ public enum ErrorCode {
     INVALID_PRODUCT_PRICE(HttpStatus.BAD_REQUEST, "E050", "주문상품의 가격은 1 미만이면 안됩니다."),
     INVALID_PRODUCT_STOCK(HttpStatus.BAD_REQUEST, "E050", "주문한 상품의 재고가 부족합니다."),
     DUPLICATE_ORDER(HttpStatus.BAD_REQUEST, "E050", "중복된 주문 입니다."),
+    INVALID_COUPON_OWNER(HttpStatus.BAD_REQUEST, "E050", "쿠폰 소유자가 일치하지 않습니다."),
 
     // 401 UNAUTHORIZED
     UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "EU001", "인증이 필요합니다."),
@@ -56,7 +57,39 @@ public enum ErrorCode {
     INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "EI001", "서버 에러가 발생했습니다."),
     HISTORY_SHIPPING_MISMATCH(HttpStatus.INTERNAL_SERVER_ERROR, "EI002", "배송이력과 배송이 일치하지 않습니다."),
     CONNECTION_NOT_FOUND_BETWEEN_HUBS(HttpStatus.INTERNAL_SERVER_ERROR, "EI003","연결된 허브 간 배송만 가능합니다."),
-    NOT_FOUND_HUB_INFO(HttpStatus.INTERNAL_SERVER_ERROR, "EI004","허브 정보를 찾을 수 없습니다. ");
+    NOT_FOUND_HUB_INFO(HttpStatus.INTERNAL_SERVER_ERROR, "EI004","허브 정보를 찾을 수 없습니다. "),
+
+    //Black friday
+    OUTBOX_PUBLISH_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EBF001", "Outbox 이벤트 발행에 실패했습니다."),
+    OUTBOX_PROCESSING_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "EBF002", "Outbox 처리에 실패했습니다."),
+    OUTBOX_WAIT_INTERRUPTED(HttpStatus.INTERNAL_SERVER_ERROR, "EBF003", "Outbox 대기 중 인터럽트되었습니다."),
+    OUTBOX_PROCESSING_TIMEOUT(HttpStatus.INTERNAL_SERVER_ERROR, "EBF004", "Outbox 처리 시간이 초과되었습니다."),
+    ORDER_VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "EBF005", "병렬 검증 실패"),
+
+    // Lua Script
+    LUA_SCRIPT_EXECUTION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "LUA001", "Lua Script 실행에 실패했습니다."),
+    INSUFFICIENT_STOCK(HttpStatus.BAD_REQUEST, "LUA002", "재고가 부족합니다."),
+    COUPON_ALREADY_USED(HttpStatus.BAD_REQUEST, "LUA003", "이미 사용한 쿠폰입니다."),
+
+    // Payment
+    PAYMENT_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "PAY001", "결제 승인에 실패했습니다."),
+    PAYMENT_CONFIRMATION_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "PAY002", "결제 확인에 실패했습니다."),
+
+    // Final Stage
+    FINAL_STAGE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FST001", "Final Stage 처리에 실패했습니다."),
+    FINAL_STAGE_STATUS_UPDATE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "FST002", "Final Stage 상태 갱신에 실패했습니다."),
+
+    // JSON Processing
+    JSON_PROCESSING_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "JSN001", "JSON 처리 중 오류가 발생했습니다."),
+
+    // Redis
+    REDIS_CONNECTION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "RDS001", "Redis 연결에 실패했습니다."),
+    REDIS_OPERATION_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "RDS002", "Redis 작업 중 오류가 발생했습니다."),
+
+    //BF OUTBOX
+    OUTBOX_NOT_FOUND(HttpStatus.INTERNAL_SERVER_ERROR, "BFOB001", "OUTBOX 작업 중 오류가 발생했습니다."),
+    OUTBOX_NOT_INIT(HttpStatus.INTERNAL_SERVER_ERROR, "BFOB002", "OUTBOX가 snapshot 저장 시점에 초기화 되지 않았습니다.");
+
 
     private final HttpStatus status;
     private final String code;

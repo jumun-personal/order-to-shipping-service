@@ -11,10 +11,10 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class IssueCouponRedissonConfig {
 
-    @Value("${spring.data.redis.host}")
+    @Value("${spring.data.redis.cache.host}")
     private String host;
 
-    @Value("${spring.data.redis.port}")
+    @Value("${spring.data.redis.cache.port}")
     private int port;
 
     @Bean

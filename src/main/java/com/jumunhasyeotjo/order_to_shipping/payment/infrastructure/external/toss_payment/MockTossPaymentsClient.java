@@ -1,17 +1,16 @@
 package com.jumunhasyeotjo.order_to_shipping.payment.infrastructure.external.toss_payment;
 
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.util.concurrent.ThreadLocalRandom;
-
-import org.springframework.context.annotation.Profile;
-import org.springframework.stereotype.Component;
-
 import com.jumunhasyeotjo.order_to_shipping.payment.infrastructure.external.toss_payment.dto.TossCancelRequest;
 import com.jumunhasyeotjo.order_to_shipping.payment.infrastructure.external.toss_payment.dto.TossConfirmRequest;
 import com.jumunhasyeotjo.order_to_shipping.payment.infrastructure.external.toss_payment.dto.TossPaymentResponse;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
+
+import java.time.OffsetDateTime;
 
 @Profile("perf")
+@Primary
 @Component
 public class MockTossPaymentsClient implements TossPaymentsClient {
 
