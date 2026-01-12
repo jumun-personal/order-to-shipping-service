@@ -60,25 +60,6 @@ public class BfOrderCreatedEvent implements DomainEvent {
         this.occurredAt = LocalDateTime.now();
     }
 
-    public static OrderCreatedEvent of(Order order, List<VendorOrder> vendorOrders) {
-        // 1. 엔티티(VendorOrder) 리스트 이벤트용 DTO(VendingOrder) 리스트로 변환
-        List<OrderCreatedEvent.VendingOrder> vendingOrderDtos = vendorOrders.stream()
-                .map(vo -> new OrderCreatedEvent.VendingOrder(
-                        vo.getId(),
-                        vo.getSupplierCompanyId(),
-                        getProductInfo(vo.getOrderProducts()) // 각 공급사별 주문 상품 정보 생성
-                ))
-                .toList();
-
-        // 2. 이벤트 객체 생성
-        return new OrderCreatedEvent(
-                order.getId(),
-                order.getCreatedAt(),
-                order.getRequestMessage(),
-                order.getReceiverCompanyId(),
-                vendingOrderDtos
-        );
-    }
 
     public static BfOrderCreatedEvent of(UUID orderId, Long userId, UUID organizationId,
                                          UUID receiverCompanyId, String requestMessage,

@@ -60,7 +60,7 @@ public class BFOrderOrchestrator {
             // 해당 지점에서 Crash 발생시 스케줄러를 통해 아래 로직 재실행 (최종적 일관성 성공 처리)
 
             // [Tx-1.2] Outbox 상태 갱신 (complete) + SnapShot 상태 갱신 (ORDERED)
-            return bfOrderOutboxService.executeStatusUpdate(pendingOrder);
+            return bfOrderOutboxService.executeStatusUpdate(pendingOrder, command);
 
         } catch (Exception e) {
             UUID orderId = pendingOrder.getId();

@@ -47,10 +47,21 @@ public class BFOrderService {
     }
 
     @Transactional
-    public Order updateStatusForComplete(UUID orderId, List<VendorOrder> vendorOrders) {
+    public Order updateStatusForComplete(UUID orderId, CreateOrderCommand command) {
         Order order = getOrder(orderId);
         order.updateStatus(OrderStatus.ORDERED);
-        eventPublisher.publishEvent(BfOrderCreatedEvent.of(order, vendorOrders));
+        eventPublisher.publishEvent(BfOrderCreatedEvent.of(
+                orderId,
+                command.userId(),
+                command.organizationId(),
+                order.getReceiverCompanyId(),
+                command.requestMessage(),
+                order.getTotalPrice(),
+                command.orderProducts(),
+                command.couponId(),
+                command.tossPaymentKey(),
+                command.tossOrderId()
+        ));
         return order;
     }
 

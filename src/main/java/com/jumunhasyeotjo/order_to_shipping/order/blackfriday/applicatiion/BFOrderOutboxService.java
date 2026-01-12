@@ -3,6 +3,7 @@ package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jumunhasyeotjo.order_to_shipping.common.exception.BusinessException;
 import com.jumunhasyeotjo.order_to_shipping.common.exception.ErrorCode;
+import com.jumunhasyeotjo.order_to_shipping.order.application.command.CreateOrderCommand;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.entity.Order;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +34,7 @@ public class BFOrderOutboxService {
      * - 두 상태 갱신은 하나의 트랜잭션으로 묶음
      */
     @Transactional
-    public Order executeStatusUpdate(Order order) {
+    public Order executeStatusUpdate(Order order, CreateOrderCommand command) {
         UUID orderId = order.getId();
         log.info("[Final Stage Start] orderId: {}", orderId);
 
@@ -42,7 +43,7 @@ public class BFOrderOutboxService {
             markAsReady(orderId);
             Order completedOrder = bfOrderService.updateStatusForComplete(
                     orderId,
-                    order.getVendorOrders()
+                    command
             );
 
             log.info("[Final Stage End] Outbox/SnapShot 상태 갱신 완료 - orderId: {}", orderId);
