@@ -116,22 +116,30 @@ public class RedisOutboxWorker {
     @Scheduled(fixedDelay = 100)
     public void processOutboxEvents() {
         try {
-            // XREADGROUP으로 이벤트 읽기
             List<MapRecord<String, Object, Object>> messages = readMessagesFromStream();
 
             if (messages == null || messages.isEmpty()) {
                 return;
             }
 
-            log.info("[Worker 시작] 처리할 메시지 수: {}", messages.size());
-
-            // 각 메시지 처리
             for (MapRecord<String, Object, Object> message : messages) {
-                processMessage(message);
+                try {
+                    processMessage(message);
+
+                    // 성공 시 ACK
+                    redisTemplate.opsForStream()
+                            .acknowledge(STREAM_KEY, CONSUMER_GROUP, message.getId());
+
+                    log.info("ACK 완료: {}", message.getId());
+
+                } catch (Exception e) {
+                    // 실패 시 ACK 안 함 → pending 유지
+                    log.error("처리 실패, pending 유지: {}", message.getId(), e);
+                }
             }
 
         } catch (Exception e) {
-            log.error("[Worker 실행 오류] error: {}", e.getMessage(), e);
+            log.error("Worker 오류: {}", e.getMessage(), e);
         }
     }
 
@@ -169,7 +177,6 @@ public class RedisOutboxWorker {
         try {
             // 메시지에서 데이터 추출
             String payloadJson = (String) message.getValue().get("payload");
-            String idempotencyKey = (String) message.getValue().get("idempotencyKey");
             orderId = (String) message.getValue().get("orderId");
 
             log.info("[Tx-2 Start] Redis Streams 메시지 처리 시작 - messageId: {}, orderId: {}", messageId, orderId);
@@ -195,29 +202,6 @@ public class RedisOutboxWorker {
             handleFailedMessage(messageId, orderId, e);
         }
     }
-
-//    /**
-//     * 비즈니스 로직 처리
-//     *
-//     * 실제로는 여기서 외부 서비스 호출 등의 작업 수행
-//     * 현재는 단순히 로그만 출력
-//     */
-//    private void processBusinessLogic(OutboxEventPayload payload) {
-//        log.info("[비즈니스 로직] orderId: {}, totalPrice: {}, products: {}",
-//                payload.getOrderId(),
-//                payload.getTotalPrice(),
-//                payload.getOrderProducts().size());
-//
-//        // TODO: 실제 비즈니스 로직 구현
-//        // 예: 재고 확정, 쿠폰 확정, 알림 발송 등
-//
-//        // 시뮬레이션: 처리 시간
-//        try {
-//            Thread.sleep(100);
-//        } catch (InterruptedException e) {
-//            Thread.currentThread().interrupt();
-//        }
-//    }
 
     /**
      * ACK 전송 (commit)

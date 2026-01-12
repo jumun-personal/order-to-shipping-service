@@ -59,7 +59,6 @@ public class BFOrderOutboxService {
      * Outbox 생성
      *
      * Lua Script 실행 후 DB에도 기록
-     * (Redis 장애 대비 이중화)
      */
     @Transactional
     public Outbox createOutbox(UUID orderId, String idempotencyKey,
