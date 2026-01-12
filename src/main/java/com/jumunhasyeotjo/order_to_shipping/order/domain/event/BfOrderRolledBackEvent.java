@@ -28,8 +28,8 @@ public class BfOrderRolledBackEvent implements DomainEvent {
         this.occurredAt = LocalDateTime.now();
     }
 
-    public static OrderRolledBackEvent of(UUID orderId, RollbackStatus status) {
-        return new OrderRolledBackEvent(
+    public static BfOrderRolledBackEvent of(UUID orderId, RollbackStatus status) {
+        return new BfOrderRolledBackEvent(
                 orderId,
                 status
         );

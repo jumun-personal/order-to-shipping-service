@@ -182,8 +182,10 @@ public class BFOrderOutboxService {
 
     @Transactional
     public void markAsReady(UUID orderId) {
-        Outbox outbox = outboxRepository.findByOrderId(orderId).orElseThrow(() -> new BusinessException(ErrorCode.OUTBOX_NOT_INIT));
-        outbox.markAsReady();
+        int updatedRows = outboxRepository.markAsReadyByOrderId(orderId, LocalDateTime.now());
+        if (updatedRows == 0){
+            throw new BusinessException(ErrorCode.OUTBOX_NOT_INIT);
+        }
     }
 
     @Transactional

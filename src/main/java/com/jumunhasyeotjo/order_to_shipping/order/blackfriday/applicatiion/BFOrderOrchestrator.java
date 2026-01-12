@@ -67,7 +67,6 @@ public class BFOrderOrchestrator {
             log.error("[주문 생성 실패] orderId: {}, error: {}", orderId, e.getMessage(), e);
             log.warn("[Compensate] 주문 실패 롤백 실행 - 단계: {}, 사유: {}", status, e.getMessage());
             bfOrderService.updateStatusForRollback(orderId, status);
-            //TODO BF orderRoolledBack으로 변경
             e.printStackTrace();
             throw e;
         }

@@ -2,6 +2,7 @@ package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -48,4 +49,8 @@ public interface BfOutboxRepository extends JpaRepository<Outbox, Long> {
      * 특정 시간 이전의 완료된 데이터 조회 (정리용)
      */
     List<Outbox> findByStatusAndUpdatedAtBefore(Outbox.OutboxStatus status, LocalDateTime threshold);
+
+    @Modifying
+    @Query("UPDATE Outbox o SET o.status = 'READY', o.updatedAt = :now WHERE o.orderId = :orderId")
+    int markAsReadyByOrderId(@Param("orderId") UUID orderId, @Param("now") LocalDateTime now);
 }
