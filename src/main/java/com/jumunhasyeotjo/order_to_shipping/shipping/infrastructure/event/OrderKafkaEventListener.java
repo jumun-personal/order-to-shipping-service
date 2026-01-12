@@ -47,23 +47,26 @@ public class OrderKafkaEventListener {
 	}
 
 	public void dispatch(String payload, String eventType) throws JsonProcessingException {
-		switch (OrderEvent.ofString(eventType)){
-			case CREATED ->{
-				OrderCreatedEvent orderCreatedEvent = objectMapper.readValue(payload, OrderCreatedEvent.class);
-				inboxService.process(orderCreatedEvent.orderId().toString(), OrderEvent.CREATED.getEventName(), jsonUtil.toJson(orderCreatedEvent),
-				() -> orderEventHandler.orderCreated(orderCreatedEvent));
+		OrderEvent orderEvent = OrderEvent.ofString(eventType);
+		if(orderEvent != null) {
+			switch (orderEvent) {
+				case CREATED -> {
+					OrderCreatedEvent orderCreatedEvent = objectMapper.readValue(payload, OrderCreatedEvent.class);
+					inboxService.process(orderCreatedEvent.orderId().toString(), OrderEvent.CREATED.getEventName(), jsonUtil.toJson(orderCreatedEvent),
+							() -> orderEventHandler.orderCreated(orderCreatedEvent));
+				}
+				case CANCELED -> {
+					OrderCanceledEvent orderCanceledEvent = objectMapper.readValue(payload, OrderCanceledEvent.class);
+					inboxService.process(orderCanceledEvent.orderId().toString(), OrderEvent.CANCELED.getEventName(), jsonUtil.toJson(orderCanceledEvent),
+							() -> orderEventHandler.orderCanceled(orderCanceledEvent));
+				}
+				case ROLLED_BACK -> {
+					OrderRolledBackEvent orderRolledBackEvent = objectMapper.readValue(payload, OrderRolledBackEvent.class);
+					inboxService.process(orderRolledBackEvent.orderId().toString(), OrderEvent.ROLLED_BACK.getEventName(), jsonUtil.toJson(orderRolledBackEvent),
+							() -> orderEventHandler.orderRolledBack(orderRolledBackEvent));
+				}
+				default -> log.info("UNHANDLED {}", eventType);
 			}
-			case CANCELED -> {
-				OrderCanceledEvent orderCanceledEvent = objectMapper.readValue(payload, OrderCanceledEvent.class);
-				inboxService.process(orderCanceledEvent.orderId().toString(), OrderEvent.CANCELED.getEventName(), jsonUtil.toJson(orderCanceledEvent),
-					() -> orderEventHandler.orderCanceled(orderCanceledEvent));
-			}
-			case ROLLED_BACK -> {
-				OrderRolledBackEvent orderRolledBackEvent = objectMapper.readValue(payload, OrderRolledBackEvent.class);
-				inboxService.process(orderRolledBackEvent.orderId().toString(), OrderEvent.ROLLED_BACK.getEventName(), jsonUtil.toJson(orderRolledBackEvent),
-					() -> orderEventHandler.orderRolledBack(orderRolledBackEvent));
-			}
-			default -> log.info("UNHANDLED {}",eventType);
 		}
 	}
 }
