@@ -123,19 +123,7 @@ public class RedisOutboxWorker {
             }
 
             for (MapRecord<String, Object, Object> message : messages) {
-                try {
-                    processMessage(message);
-
-                    // 성공 시 ACK
-                    redisTemplate.opsForStream()
-                            .acknowledge(STREAM_KEY, CONSUMER_GROUP, message.getId());
-
-                    log.info("ACK 완료: {}", message.getId());
-
-                } catch (Exception e) {
-                    // 실패 시 ACK 안 함 → pending 유지
-                    log.error("처리 실패, pending 유지: {}", message.getId(), e);
-                }
+                processMessage(message);
             }
 
         } catch (Exception e) {
