@@ -14,7 +14,8 @@ import lombok.extern.slf4j.Slf4j;
 public enum OrderEvent {
 	CREATED("ORDER_CREATED"),
 	CANCELED("ORDER_CANCELLED"),
-	ROLLED_BACK("ORDER_ROLLEDBACK");
+	ROLLED_BACK("ORDER_ROLLEDBACK"),
+	BF_CREATED("BF_ORDER_CREATED");
 
 	private final String eventName;
 

@@ -63,6 +63,7 @@ public class OrderKafkaEventListener {
 				inboxService.process(orderRolledBackEvent.orderId().toString(), OrderEvent.ROLLED_BACK.getEventName(), jsonUtil.toJson(orderRolledBackEvent),
 					() -> orderEventHandler.orderRolledBack(orderRolledBackEvent));
 			}
+			default -> log.info("UNHANDLED {}",eventType);
 		}
 	}
 }
