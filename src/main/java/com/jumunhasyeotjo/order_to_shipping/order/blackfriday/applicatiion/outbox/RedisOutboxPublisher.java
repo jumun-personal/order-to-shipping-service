@@ -1,4 +1,4 @@
-package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion;
+package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.outbox;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;

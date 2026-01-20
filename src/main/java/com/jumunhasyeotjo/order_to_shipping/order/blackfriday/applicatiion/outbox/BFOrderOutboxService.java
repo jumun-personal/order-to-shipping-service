@@ -1,9 +1,10 @@
-package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion;
+package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.outbox;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jumunhasyeotjo.order_to_shipping.common.exception.BusinessException;
 import com.jumunhasyeotjo.order_to_shipping.common.exception.ErrorCode;
 import com.jumunhasyeotjo.order_to_shipping.order.application.command.CreateOrderCommand;
+import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.BFOrderService;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.entity.Order;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,7 +37,7 @@ public class BFOrderOutboxService {
     @Transactional
     public Order executeStatusUpdate(Order order, CreateOrderCommand command) {
         UUID orderId = order.getId();
-        log.info("[Final Stage Start] orderId: {}", orderId);
+        log.debug("[Final Stage Start] orderId: {}", orderId);
 
         try {
             // → 하나의 트랜잭션으로 묶음
@@ -46,11 +47,10 @@ public class BFOrderOutboxService {
                     command
             );
 
-            log.info("[Final Stage End] Outbox/SnapShot 상태 갱신 완료 - orderId: {}", orderId);
+            log.debug("[Final Stage End] Outbox/SnapShot 상태 갱신 완료 - orderId: {}", orderId);
             return completedOrder;
 
         } catch (Exception e) {
-            e.printStackTrace();
             log.error("[Final Stage 실패] orderId: {}, error: {}", orderId, e.getMessage(), e);
             throw new BusinessException(ErrorCode.FINAL_STAGE_FAILED);
         }

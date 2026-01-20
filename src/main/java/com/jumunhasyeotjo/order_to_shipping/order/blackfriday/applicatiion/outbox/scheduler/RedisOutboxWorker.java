@@ -1,6 +1,6 @@
-package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.scheduler;
+package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.outbox.scheduler;
 
-import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.BFOrderOutboxService;
+import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.outbox.BFOrderOutboxService;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -63,7 +63,7 @@ public class RedisOutboxWorker {
                 dummyMessage.put("timestamp", String.valueOf(System.currentTimeMillis()));
 
                 redisTemplate.opsForStream().add(STREAM_KEY, dummyMessage);
-                log.info("[Stream 생성] stream: {}", STREAM_KEY);
+                log.debug("[Stream 생성] stream: {}", STREAM_KEY);
             }
 
             // 2. Consumer Group 생성
@@ -73,7 +73,7 @@ public class RedisOutboxWorker {
                         .filter(group -> CONSUMER_GROUP.equals(group.groupName()))
                         .findFirst()
                         .ifPresentOrElse(
-                                group -> log.info("[Consumer Group 이미 존재] group: {}", CONSUMER_GROUP),
+                                group -> log.debug("[Consumer Group 이미 존재] group: {}", CONSUMER_GROUP),
                                 () -> createConsumerGroup()
                         );
             } catch (Exception e) {
@@ -81,7 +81,7 @@ public class RedisOutboxWorker {
                 createConsumerGroup();
             }
 
-            log.info("[Redis Outbox Worker 초기화 완료] stream: {}, group: {}", STREAM_KEY, CONSUMER_GROUP);
+            log.debug("[Redis Outbox Worker 초기화 완료] stream: {}, group: {}", STREAM_KEY, CONSUMER_GROUP);
 
         } catch (Exception e) {
             log.error("[Redis Outbox Worker 초기화 실패] error: {}", e.getMessage(), e);
@@ -96,11 +96,11 @@ public class RedisOutboxWorker {
         try {
             // ReadOffset.from("0-0"): Stream의 처음부터 읽기
             redisTemplate.opsForStream().createGroup(STREAM_KEY, ReadOffset.from("0-0"), CONSUMER_GROUP);
-            log.info("[Consumer Group 생성 완료] stream: {}, group: {}", STREAM_KEY, CONSUMER_GROUP);
+            log.debug("[Consumer Group 생성 완료] stream: {}, group: {}", STREAM_KEY, CONSUMER_GROUP);
         } catch (Exception e) {
             // BUSYGROUP 에러는 이미 존재한다는 의미이므로 무시
             if (e.getMessage() != null && e.getMessage().contains("BUSYGROUP")) {
-                log.info("[Consumer Group 이미 존재] stream: {}, group: {}", STREAM_KEY, CONSUMER_GROUP);
+                log.debug("[Consumer Group 이미 존재] stream: {}, group: {}", STREAM_KEY, CONSUMER_GROUP);
             } else {
                 throw e;
             }
@@ -167,15 +167,15 @@ public class RedisOutboxWorker {
             String payloadJson = (String) message.getValue().get("payload");
             orderId = (String) message.getValue().get("orderId");
 
-            log.info("[Tx-2 Start] Redis Streams 메시지 처리 시작 - messageId: {}, orderId: {}", messageId, orderId);
+            log.debug("[Tx-2 Start] Redis Streams 메시지 처리 시작 - messageId: {}, orderId: {}", messageId, orderId);
 
             // 처리 완료: idempotent 상태를  'ready'로 변경
             orderOutboxService.setPayload(UUID.fromString(orderId), payloadJson);
-            log.info("[Tx-2] OutBox 생성 완료 - orderId: {}, status: ready", orderId);
+            log.debug("[Tx-2] OutBox 생성 완료 - orderId: {}, status: ready", orderId);
 
             // ACK 전송 (at-least-once 보장)
             commit(messageId);
-            log.info("[Tx-2 End] Redis Streams 메시지 처리 완료 - messageId: {}, orderId: {}", messageId, orderId);
+            log.debug("[Tx-2 End] Redis Streams 메시지 처리 완료 - messageId: {}, orderId: {}", messageId, orderId);
 
         } catch (Exception e) {
             log.error("[Tx-2 실패] messageId: {}, orderId: {}, error: {}",

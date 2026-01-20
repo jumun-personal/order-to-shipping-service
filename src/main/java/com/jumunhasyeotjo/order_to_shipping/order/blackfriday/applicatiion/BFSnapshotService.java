@@ -10,13 +10,12 @@ import com.jumunhasyeotjo.order_to_shipping.order.application.command.OrderProdu
 import com.jumunhasyeotjo.order_to_shipping.order.application.dto.ProductResult;
 import com.jumunhasyeotjo.order_to_shipping.order.application.service.OrderCouponClient;
 import com.jumunhasyeotjo.order_to_shipping.order.application.service.OrderProductClient;
+import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.dto.OrderPreContextDto;
+import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.outbox.BFOrderOutboxService;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.entity.Order;
 import io.opentelemetry.api.GlobalOpenTelemetry;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.api.trace.StatusCode;
 import io.opentelemetry.api.trace.Tracer;
 import io.opentelemetry.context.Context;
-import io.opentelemetry.context.Scope;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -49,10 +48,10 @@ public class BFSnapshotService {
      */
     @Transactional
     public CreateOrderSnapshotDto createOrderSnapshot(CreateOrderCommand command) {
-        log.info("[Tx-1 Start] Request SnapShot 저장 시작");
+        log.debug("[Tx-1 Start] Request SnapShot 저장 시작");
 
         // 1. 검증 및 필요한 데이터 조회
-        OrderPreContext preContext = preValidateAndLoadOrderContext(command);
+        OrderPreContextDto preContext = preValidateAndLoadOrderContext(command);
 
         // 2. pendingOrder 생성
         Order pendingOrder = bfOrderService.createOrderAggregate(command, preContext.productResultList());
@@ -64,14 +63,14 @@ public class BFSnapshotService {
                 "BF_ORDER_CREATED",
                 null);
 
-        log.info("[Tx-1 End] Order 저장 완료 - orderId: {}", pendingOrder.getId());
+        log.debug("[Tx-1 End] Order 저장 완료 - orderId: {}", pendingOrder.getId());
 
         // Tx-1 커밋 (메서드 종료 시)
         return new CreateOrderSnapshotDto(pendingOrder, preContext.couponRes().discountAmount());
     }
 
 
-    private OrderPreContext preValidateAndLoadOrderContext(CreateOrderCommand command) {
+    private OrderPreContextDto preValidateAndLoadOrderContext(CreateOrderCommand command) {
         Context parentContext = Context.current();
         Executor contextAwareExecutor = Context.taskWrapping(ioExecutor);
         UUID organizationId = command.organizationId();
@@ -119,7 +118,7 @@ public class BFSnapshotService {
                 .allOf(validCoupon, validCompany, validOrder, findCoupon, allOrderProduct)
                 .join();
 
-        return new OrderPreContext(allOrderProduct.join(), findCoupon.join());
+        return new OrderPreContextDto(allOrderProduct.join(), findCoupon.join());
     }
 
     private CouponRes findCoupon(UUID couponId) {

@@ -1,4 +1,4 @@
-package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion;
+package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.outbox;
 
 import com.jumunhasyeotjo.order_to_shipping.order.application.command.OrderProductReq;
 import lombok.AllArgsConstructor;

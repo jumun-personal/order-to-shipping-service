@@ -1,9 +1,9 @@
 package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.relay;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.BFOrderOutboxService;
-import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.Outbox;
-import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.OutboxEventPayload;
+import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.outbox.BFOrderOutboxService;
+import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.outbox.Outbox;
+import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.outbox.OutboxEventPayload;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.event.BfOrderCreatedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

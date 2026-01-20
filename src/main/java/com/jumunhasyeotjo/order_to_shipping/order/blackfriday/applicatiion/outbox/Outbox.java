@@ -1,4 +1,4 @@
-package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion;
+package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.outbox;
 
 
 import io.hypersistence.utils.hibernate.type.json.JsonBinaryType;

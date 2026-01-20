@@ -19,8 +19,6 @@ public class BfOrderWithdrawService {
 
     public void withdraw(Order order, int totalPrice, CreateOrderCommand command) {
         UUID orderId = order.getId();
-        log.info("[Final Stage Start] orderId: {}", orderId);
-
         try {
             // 1. 결제 승인 (출금) 호출
             boolean paymentSuccess = orderPaymentClient.confirmOrder(

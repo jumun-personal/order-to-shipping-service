@@ -1,6 +1,8 @@
 package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion;
 
 import com.jumunhasyeotjo.order_to_shipping.order.application.command.CreateOrderCommand;
+import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.outbox.OutboxEventPayload;
+import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.outbox.RedisOutboxPublisher;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.entity.Order;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -67,7 +69,6 @@ public class BfReservationService {
             return messageId;
 
         } catch (Exception e) {
-            e.printStackTrace();
             log.error("[Lua Atomic 실패] orderId: {}, error: {}", order.getId(), e.getMessage(), e);
             throw e;
         }

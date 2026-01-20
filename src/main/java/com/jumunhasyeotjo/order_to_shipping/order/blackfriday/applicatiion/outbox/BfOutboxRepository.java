@@ -1,4 +1,4 @@
-package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion;
+package com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.outbox;
 
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
