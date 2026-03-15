@@ -14,7 +14,7 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class BfOrderWithdrawService {
+public class BFOrderWithdrawService {
     private final OrderPaymentClient orderPaymentClient;
 
     public void withdraw(Order order, int totalPrice, CreateOrderCommand command) {

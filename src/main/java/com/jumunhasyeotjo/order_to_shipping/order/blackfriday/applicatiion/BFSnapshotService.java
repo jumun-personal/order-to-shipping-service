@@ -11,7 +11,6 @@ import com.jumunhasyeotjo.order_to_shipping.order.application.dto.ProductResult;
 import com.jumunhasyeotjo.order_to_shipping.order.application.service.OrderCouponClient;
 import com.jumunhasyeotjo.order_to_shipping.order.application.service.OrderProductClient;
 import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.dto.OrderPreContextDto;
-import com.jumunhasyeotjo.order_to_shipping.order.blackfriday.applicatiion.outbox.BFOrderOutboxService;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.entity.Order;
 import io.opentelemetry.api.GlobalOpenTelemetry;
 import io.opentelemetry.api.trace.Tracer;
@@ -32,12 +31,11 @@ import java.util.concurrent.Executor;
 @Slf4j
 public class BFSnapshotService {
 
-    private final BFOrderOutboxService bfOrderOutboxService;
     private final BFOrderValidService validService;
     private final BFOrderService bfOrderService;
     private final OrderProductClient orderProductClient;
     private final OrderCouponClient orderCouponClient;
-    private final Executor ioExecutor;  // Virtual Thread Executor
+    private final Executor ioExecutor;
     private static final Tracer tracer = GlobalOpenTelemetry.getTracer("order-service");
 
     /**
@@ -55,14 +53,6 @@ public class BFSnapshotService {
 
         // 2. pendingOrder 생성
         Order pendingOrder = bfOrderService.createOrderAggregate(command, preContext.productResultList());
-
-        // 3. outbox 초기화 -> 메인 thread와 redis outbox worker thread의 순서 보장이 어려워 미리 생성
-        bfOrderOutboxService.createOutbox(
-                pendingOrder.getId(),
-                pendingOrder.getId().toString(),
-                "BF_ORDER_CREATED",
-                null);
-
         log.debug("[Tx-1 End] Order 저장 완료 - orderId: {}", pendingOrder.getId());
 
         // Tx-1 커밋 (메서드 종료 시)
