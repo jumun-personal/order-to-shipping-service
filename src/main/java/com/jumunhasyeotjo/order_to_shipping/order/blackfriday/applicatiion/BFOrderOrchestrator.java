@@ -5,10 +5,8 @@ import com.jumunhasyeotjo.order_to_shipping.common.exception.ErrorCode;
 import com.jumunhasyeotjo.order_to_shipping.order.application.CreateOrderSnapshotDto;
 import com.jumunhasyeotjo.order_to_shipping.order.application.command.CreateOrderCommand;
 import com.jumunhasyeotjo.order_to_shipping.order.application.command.OrderProductReq;
-import com.jumunhasyeotjo.order_to_shipping.order.application.dto.ProductResult;
-import com.jumunhasyeotjo.order_to_shipping.order.application.service.OrderCouponClient;
-import com.jumunhasyeotjo.order_to_shipping.order.application.service.OrderProductClient;
 import com.jumunhasyeotjo.order_to_shipping.order.application.service.OrderStockClient;
+import com.jumunhasyeotjo.order_to_shipping.order.application.service.OrderCouponClient;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.entity.Order;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.vo.RollbackStatus;
 import lombok.RequiredArgsConstructor;
@@ -22,11 +20,9 @@ import java.util.UUID;
 @Component
 @RequiredArgsConstructor
 public class BFOrderOrchestrator {
-    private final BFOrderValidService bfOrderValidService;
     private final BFOrderService bfOrderService;
     private final BFSnapshotService bfSnapshotService;
     private final BFOrderWithdrawService bfOrderWithdrawService;
-    private final OrderProductClient orderProductClient;
     private final OrderCouponClient orderCouponClient;
     private final OrderStockClient orderStockClient;
 
@@ -75,25 +71,6 @@ public class BFOrderOrchestrator {
             bfOrderService.updateStatusForRollback(pendingOrder.getId(), status);
             throw e;
         }
-    }
-
-    private void validateAndLoadContext(CreateOrderCommand command) {
-        bfOrderValidService.validateCompany(command.organizationId());
-        bfOrderValidService.validateDuplicateOrder(command.idempotencyKey());
-        if (command.couponId() != null) {
-            bfOrderValidService.validateCoupon(command.userId(), command.couponId());
-        }
-    }
-
-    private List<ProductResult> findAllOrderProduct(List<OrderProductReq> orderProducts) {
-        List<ProductResult> allProducts = orderProductClient
-                .findAllProducts(orderProducts.stream().map(OrderProductReq::productId).toList())
-                .data();
-
-        if (allProducts.size() != orderProducts.size()) {
-            throw new BusinessException(ErrorCode.PRODUCT_NOT_FOUND);
-        }
-        return allProducts;
     }
 
     private Integer useCoupon(UUID couponId, UUID orderId) {
