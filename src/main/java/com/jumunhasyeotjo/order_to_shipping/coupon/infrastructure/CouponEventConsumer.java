@@ -1,6 +1,7 @@
 package com.jumunhasyeotjo.order_to_shipping.coupon.infrastructure;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jumunhasyeotjo.order_to_shipping.coupon.application.CouponCompensationService;
 import com.jumunhasyeotjo.order_to_shipping.coupon.application.IssueCouponService;
 import com.jumunhasyeotjo.order_to_shipping.coupon.application.command.CancelCouponCommand;
 import com.jumunhasyeotjo.order_to_shipping.coupon.application.command.IssueCouponCommand;
@@ -20,6 +21,7 @@ import java.util.UUID;
 @Service
 @Slf4j
 public class CouponEventConsumer {
+    private final CouponCompensationService couponCompensationService;
     private final IssueCouponService issueCouponService;
     private final ObjectMapper objectMapper;
 
@@ -75,9 +77,12 @@ public class CouponEventConsumer {
 
         log.info("[rollback] event: {}", event);
 
-        issueCouponService.cancelCoupon(
-            new CancelCouponCommand(event.orderId())
-        );
+        if (!event.compensateCoupon()) {
+            log.info("[rollback] coupon compensation skipped. orderId={}", event.orderId());
+            return;
+        }
+
+        couponCompensationService.requestCompensation(event.orderId());
     }
 
     private void handleCancel(String json) throws Exception {

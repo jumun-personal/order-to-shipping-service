@@ -8,10 +8,11 @@ import com.jumunhasyeotjo.order_to_shipping.order.application.dto.ProductResult;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.entity.Order;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.entity.OrderProduct;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.entity.VendorOrder;
-import com.jumunhasyeotjo.order_to_shipping.order.domain.event.BfOrderCreatedEvent;
-import com.jumunhasyeotjo.order_to_shipping.order.domain.event.BfOrderRolledBackEvent;
+import com.jumunhasyeotjo.order_to_shipping.order.domain.event.OrderCreatedEvent;
+import com.jumunhasyeotjo.order_to_shipping.order.domain.event.OrderRolledBackEvent;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.repository.OrderRepository;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.vo.OrderStatus;
+import com.jumunhasyeotjo.order_to_shipping.order.domain.vo.RollbackPlan;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.vo.RollbackStatus;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,10 +40,10 @@ public class BFOrderService {
     }
 
     @Transactional
-    public Order updateStatusForRollback(UUID orderId, RollbackStatus rollbackStatus) {
+    public Order updateStatusForRollback(UUID orderId, RollbackPlan rollbackPlan) {
         Order order = getOrder(orderId);
         order.updateStatus(OrderStatus.FAILED);
-        eventPublisher.publishEvent(BfOrderRolledBackEvent.of(order.getId(), rollbackStatus));
+        eventPublisher.publishEvent(OrderRolledBackEvent.of(order.getId(), rollbackPlan));
         return order;
     }
 
@@ -50,18 +51,8 @@ public class BFOrderService {
     public Order updateStatusForComplete(UUID orderId, CreateOrderCommand command) {
         Order order = getOrder(orderId);
         order.updateStatus(OrderStatus.ORDERED);
-        eventPublisher.publishEvent(BfOrderCreatedEvent.of(
-                orderId,
-                command.userId(),
-                command.organizationId(),
-                order.getReceiverCompanyId(),
-                command.requestMessage(),
-                order.getTotalPrice(),
-                command.orderProducts(),
-                command.couponId(),
-                command.tossPaymentKey(),
-                command.tossOrderId()
-        ));
+        order.getVendorOrders().forEach(vendorOrder -> vendorOrder.getOrderProducts().size());
+        eventPublisher.publishEvent(OrderCreatedEvent.of(order, order.getVendorOrders()));
         return order;
     }
 

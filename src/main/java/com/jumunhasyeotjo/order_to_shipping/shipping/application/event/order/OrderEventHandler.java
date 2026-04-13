@@ -53,7 +53,7 @@ public class OrderEventHandler {
 
 
 	public void orderRolledBack(OrderRolledBackEvent event){
-		if(event.status().equals(RollbackStatus.PAYED_ORDER)){
+		if(event.compensatePayment() || event.status().equals(RollbackStatus.PAYED_ORDER)){
 			CancelPaymentCommand command = new CancelPaymentCommand(
 				event.orderId(),
 				"주문 처리중 오류 발생"

@@ -6,10 +6,11 @@ import com.jumunhasyeotjo.order_to_shipping.order.application.command.CreateOrde
 import com.jumunhasyeotjo.order_to_shipping.order.application.command.OrderProductReq;
 import com.jumunhasyeotjo.order_to_shipping.order.application.dto.ProductResult;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.entity.Order;
-import com.jumunhasyeotjo.order_to_shipping.order.domain.event.BfOrderCreatedEvent;
-import com.jumunhasyeotjo.order_to_shipping.order.domain.event.BfOrderRolledBackEvent;
+import com.jumunhasyeotjo.order_to_shipping.order.domain.event.OrderCreatedEvent;
+import com.jumunhasyeotjo.order_to_shipping.order.domain.event.OrderRolledBackEvent;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.repository.OrderRepository;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.vo.OrderStatus;
+import com.jumunhasyeotjo.order_to_shipping.order.domain.vo.RollbackPlan;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.vo.RollbackStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -74,7 +75,7 @@ class BFOrderServiceTest {
         Order result = bfOrderService.updateStatusForComplete(orderId, command);
 
         assertThat(result.getStatus()).isEqualTo(OrderStatus.ORDERED);
-        verify(eventPublisher).publishEvent(any(BfOrderCreatedEvent.class));
+        verify(eventPublisher).publishEvent(any(OrderCreatedEvent.class));
     }
 
     @Test
@@ -84,10 +85,10 @@ class BFOrderServiceTest {
         Order order = createPendingOrder(orderId);
         given(orderRepository.findById(orderId)).willReturn(Optional.of(order));
 
-        Order result = bfOrderService.updateStatusForRollback(orderId, RollbackStatus.DECREASE_STOCK);
+        Order result = bfOrderService.updateStatusForRollback(orderId, RollbackPlan.decreaseStockFailure(true));
 
         assertThat(result.getStatus()).isEqualTo(OrderStatus.FAILED);
-        verify(eventPublisher).publishEvent(any(BfOrderRolledBackEvent.class));
+        verify(eventPublisher).publishEvent(any(OrderRolledBackEvent.class));
     }
 
     @Test

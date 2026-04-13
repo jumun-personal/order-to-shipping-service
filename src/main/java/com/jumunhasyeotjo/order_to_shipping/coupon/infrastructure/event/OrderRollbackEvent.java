@@ -6,6 +6,9 @@ import java.util.UUID;
 public record OrderRollbackEvent(
     UUID orderId,
     String status,
+    boolean compensateCoupon,
+    boolean compensateStock,
+    boolean compensatePayment,
     LocalDateTime occurredAt
 ) {
 }

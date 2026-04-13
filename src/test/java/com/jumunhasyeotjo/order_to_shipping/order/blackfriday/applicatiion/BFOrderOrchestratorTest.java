@@ -9,17 +9,24 @@ import com.jumunhasyeotjo.order_to_shipping.order.application.dto.ExternalExists
 import com.jumunhasyeotjo.order_to_shipping.order.application.service.OrderCouponClient;
 import com.jumunhasyeotjo.order_to_shipping.order.application.service.OrderStockClient;
 import com.jumunhasyeotjo.order_to_shipping.order.domain.entity.Order;
-import com.jumunhasyeotjo.order_to_shipping.order.domain.vo.RollbackStatus;
+import com.jumunhasyeotjo.order_to_shipping.order.domain.vo.RollbackPlan;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static com.jumunhasyeotjo.order_to_shipping.order.fixtures.OrderFixtures.getOrder;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,8 +51,26 @@ class BFOrderOrchestratorTest {
     @Mock
     private OrderStockClient orderStockClient;
 
-    @InjectMocks
     private BFOrderOrchestrator bfOrderOrchestrator;
+    private ExecutorService ioExecutor;
+
+    @BeforeEach
+    void setUp() {
+        ioExecutor = Executors.newVirtualThreadPerTaskExecutor();
+        bfOrderOrchestrator = new BFOrderOrchestrator(
+                bfOrderService,
+                bfSnapshotService,
+                bfOrderWithdrawService,
+                orderCouponClient,
+                orderStockClient,
+                ioExecutor
+        );
+    }
+
+    @AfterEach
+    void tearDown() {
+        ioExecutor.close();
+    }
 
     @Test
     @DisplayName("BF 주문 생성 성공 - 쿠폰 사용 포함")
@@ -107,70 +132,108 @@ class BFOrderOrchestratorTest {
     }
 
     @Test
-    @DisplayName("BF 주문 생성 실패 - 쿠폰 사용 실패 시 롤백 상태는 USE_COUPON")
+    @DisplayName("BF 주문 생성 실패 - 쿠폰 사용 실패 시 재고 완료를 기다리지 않고 재고 보상 롤백을 발행한다")
     void createOrder_whenCouponUseFails_rollbackUseCoupon() {
         CreateOrderCommand command = createCommand(UUID.randomUUID());
         Order pendingOrder = createPendingOrder(1000);
 
         given(bfSnapshotService.createOrderSnapshot(command))
                 .willReturn(new CreateOrderSnapshotDto(pendingOrder, 100));
+        CountDownLatch releaseStock = new CountDownLatch(1);
         given(orderCouponClient.useCoupon(command.couponId(), pendingOrder.getId())).willReturn(0);
+        given(orderStockClient.decreaseStock(command.orderProducts(), pendingOrder.getId().toString()))
+                .willAnswer(invocation -> {
+                    releaseStock.await(2, TimeUnit.SECONDS);
+                    return new ExternalExists(true);
+                });
 
-        assertThatThrownBy(() -> bfOrderOrchestrator.createOrder(command))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_INPUT);
+        try {
+            Assertions.assertTimeoutPreemptively(Duration.ofMillis(500), () ->
+                    assertThatThrownBy(() -> bfOrderOrchestrator.createOrder(command))
+                            .isInstanceOf(BusinessException.class)
+                            .extracting("errorCode")
+                            .isEqualTo(ErrorCode.INVALID_INPUT)
+            );
+        } finally {
+            releaseStock.countDown();
+        }
 
-        verify(bfOrderService).updateStatusForRollback(pendingOrder.getId(), RollbackStatus.USE_COUPON);
-        verify(orderStockClient, never()).decreaseStock(any(), any());
+        verify(bfOrderService).updateStatusForRollback(pendingOrder.getId(), RollbackPlan.useCouponFailure());
+        verify(bfOrderService, never()).updateStatusForRollback(
+                pendingOrder.getId(),
+                RollbackPlan.paymentFailure(true)
+        );
     }
 
     @Test
-    @DisplayName("BF 주문 생성 실패 - 재고 부족 시 롤백 상태는 DECREASE_STOCK")
+    @DisplayName("BF 주문 생성 실패 - 재고 부족 시 쿠폰 완료를 기다리지 않고 쿠폰 보상 롤백을 발행한다")
     void createOrder_whenStockDecreaseFails_rollbackDecreaseStock() {
-        CreateOrderCommand command = createCommand(null);
+        CreateOrderCommand command = createCommand(UUID.randomUUID());
         Order pendingOrder = createPendingOrder(1000);
 
         given(bfSnapshotService.createOrderSnapshot(command))
-                .willReturn(new CreateOrderSnapshotDto(pendingOrder, null));
+                .willReturn(new CreateOrderSnapshotDto(pendingOrder, 100));
+        CountDownLatch releaseCoupon = new CountDownLatch(1);
+        given(orderCouponClient.useCoupon(command.couponId(), pendingOrder.getId()))
+                .willAnswer(invocation -> {
+                    releaseCoupon.await(2, TimeUnit.SECONDS);
+                    return 100;
+                });
         given(orderStockClient.decreaseStock(command.orderProducts(), pendingOrder.getId().toString()))
                 .willReturn(new ExternalExists(false));
 
-        assertThatThrownBy(() -> bfOrderOrchestrator.createOrder(command))
-                .isInstanceOf(BusinessException.class)
-                .extracting("errorCode")
-                .isEqualTo(ErrorCode.INVALID_PRODUCT_STOCK);
+        try {
+            Assertions.assertTimeoutPreemptively(Duration.ofMillis(500), () ->
+                    assertThatThrownBy(() -> bfOrderOrchestrator.createOrder(command))
+                            .isInstanceOf(BusinessException.class)
+                            .extracting("errorCode")
+                            .isEqualTo(ErrorCode.INVALID_PRODUCT_STOCK)
+            );
+        } finally {
+            releaseCoupon.countDown();
+        }
 
-        verify(bfOrderService).updateStatusForRollback(pendingOrder.getId(), RollbackStatus.DECREASE_STOCK);
+        verify(bfOrderService).updateStatusForRollback(
+                pendingOrder.getId(),
+                RollbackPlan.decreaseStockFailure(true)
+        );
+        verify(bfOrderService, never()).updateStatusForRollback(
+                pendingOrder.getId(),
+                RollbackPlan.paymentFailure(true)
+        );
         verify(bfOrderWithdrawService, never()).withdraw(any(), anyInt(), any());
     }
 
     @Test
-    @DisplayName("BF 주문 생성 실패 - 결제 실패 시 롤백 상태는 PAYED_ORDER")
+    @DisplayName("BF 주문 생성 실패 - 결제 실패 시 쿠폰, 재고, 결제 보상 플래그를 포함한다")
     void createOrder_whenWithdrawFails_rollbackPayedOrder() {
-        CreateOrderCommand command = createCommand(null);
+        CreateOrderCommand command = createCommand(UUID.randomUUID());
         Order pendingOrder = createPendingOrder(1000);
 
         given(bfSnapshotService.createOrderSnapshot(command))
-                .willReturn(new CreateOrderSnapshotDto(pendingOrder, null));
+                .willReturn(new CreateOrderSnapshotDto(pendingOrder, 100));
+        given(orderCouponClient.useCoupon(command.couponId(), pendingOrder.getId())).willReturn(100);
         given(orderStockClient.decreaseStock(command.orderProducts(), pendingOrder.getId().toString()))
                 .willReturn(new ExternalExists(true));
 
         BusinessException paymentFailure = new BusinessException(ErrorCode.FINAL_STAGE_FAILED);
-        givenExceptionOnWithdraw(pendingOrder, command, paymentFailure);
+        givenExceptionOnWithdraw(pendingOrder, command, 900, paymentFailure);
 
         assertThatThrownBy(() -> bfOrderOrchestrator.createOrder(command))
                 .isInstanceOf(BusinessException.class)
                 .extracting("errorCode")
                 .isEqualTo(ErrorCode.FINAL_STAGE_FAILED);
 
-        verify(bfOrderService).updateStatusForRollback(pendingOrder.getId(), RollbackStatus.PAYED_ORDER);
+        verify(bfOrderService).updateStatusForRollback(
+                pendingOrder.getId(),
+                RollbackPlan.paymentFailure(true)
+        );
     }
 
-    private void givenExceptionOnWithdraw(Order pendingOrder, CreateOrderCommand command, RuntimeException e) {
+    private void givenExceptionOnWithdraw(Order pendingOrder, CreateOrderCommand command, int paymentPrice, RuntimeException e) {
         org.mockito.Mockito.doThrow(e)
                 .when(bfOrderWithdrawService)
-                .withdraw(pendingOrder, 1000, command);
+                .withdraw(pendingOrder, paymentPrice, command);
     }
 
     private Order createPendingOrder(int totalPrice) {

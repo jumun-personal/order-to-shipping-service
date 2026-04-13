@@ -23,6 +23,7 @@ public class IssueCouponService {
 
     private final CouponRepository couponRepository;
     private final IssueCouponRepository issueCouponRepository;
+    private final CouponCompensationService couponCompensationService;
 
     @Transactional
     public IssueCouponResult issue(IssueCouponCommand command) {
@@ -48,6 +49,7 @@ public class IssueCouponService {
 
         IssueCoupon issueCoupon = issueCouponRepository.findById(issueCouponId);
         issueCoupon.useCoupon(orderId);
+        couponCompensationService.handleCouponUsed(orderId, issueCoupon);
         return issueCoupon.getCoupon().getDiscountAmount();
     }
 

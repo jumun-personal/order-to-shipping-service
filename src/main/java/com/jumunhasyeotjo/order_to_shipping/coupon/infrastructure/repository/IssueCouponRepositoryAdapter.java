@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Component
@@ -28,6 +29,11 @@ public class IssueCouponRepositoryAdapter implements IssueCouponRepository {
     @Override
     public IssueCoupon findByOrderId(UUID orderId) {
         return jpaIssueCouponRepository.findByOrderId(orderId).orElseThrow(IllegalArgumentException::new);
+    }
+
+    @Override
+    public Optional<IssueCoupon> findOptionalByOrderId(UUID orderId) {
+        return jpaIssueCouponRepository.findByOrderId(orderId);
     }
 
     @Override
